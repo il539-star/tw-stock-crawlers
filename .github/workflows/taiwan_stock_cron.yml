@@ -2,20 +2,21 @@ name: Taiwan Stock Auto Crawler
 
 on:
   schedule:
-    # 💡 國際標準時間 (UTC) 每天 08:00，等於台灣時間 (UTC+8) 的每天 16:00
-    # 週一到週五運行
     - cron: '0 8 * * 1-5'
-  workflow_dispatch: # 允許你隨時點擊按鈕手動強制觸發
+  workflow_dispatch: # 允許手動強制觸發
 
 jobs:
   run-crawler:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # 賦予伺服器寫入並將檔案推回你 GitHub 的權限
+      contents: write # 顯式宣告寫入權限
 
     steps:
     - name: 檢查並載入專案原始碼
       uses: actions/checkout@v4
+      with:
+        # 💡 使用 GitHub 內建的權限金鑰進行驗證，徹底擺脫 128 錯誤
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: 初始化 Python 環境
       uses: actions/setup-python@v5
@@ -31,10 +32,9 @@ jobs:
         git config --local user.name "GitHub Action Bot"
         git add data/*.json
         
-        # 檢查是否有檔案變更，有變更才進行推回
         if git diff --staged --quiet; then
           echo "今日無新數據變動，無需更新儲存庫。"
         else
           git commit -m "Auto-update Taiwan stock data: $(date +'%Y-%m-%d')"
-          git push
+          git push origin main
         fi
